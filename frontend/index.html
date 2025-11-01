@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmpatheticAI - Your Emotional Companion</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🤖 EmpatheticAI</h1>
+            <p>Your emotionally intelligent conversational companion</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Loading overlay inside main content -->
+            <div class="loading-overlay hidden" id="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your emotions...</p>
+            </div>
+
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                Hello! I'm EmpatheticAI. I'm here to listen and understand how you're feeling. 
+                                You can talk to me about anything, and I'll do my best to understand both your words and emotions.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-container">
+                        <input type="text" id="user-input" placeholder="Tell me how you're feeling today..." maxlength="500">
+                        <button id="send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="webcam-container">
+                    <div class="webcam-header">
+                        <h3>Facial Expression Analysis</h3>
+                        <button id="toggle-camera" class="camera-btn">📷 Start Camera</button>
+                    </div>
+                    <div class="video-container">
+                        <video id="webcam" width="320" height="240" autoplay muted playsinline></video>
+                        <canvas id="emotion-canvas" width="320" height="240"></canvas>
+                    </div>
+                    <div id="emotion-display" class="emotion-display">
+                        <div class="emotion-label">Current Emotion: <span id="current-emotion">Not detected</span></div>
+                        <div class="confidence-label">Confidence: <span id="emotion-confidence">0%</span></div>
+                    </div>
+                </div>
+
+                <div class="analysis-results">
+                    <div class="result-card">
+                        <h4>Text Sentiment</h4>
+                        <div id="text-sentiment" class="result-value">Waiting for input...</div>
+                        <div id="text-confidence" class="confidence-bar">
+                            <div class="confidence-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <h4>Facial Emotion</h4>
+                        <div id="facial-emotion" class="result-value">Waiting for analysis...</div>
+                        <div id="face-confidence" class="confidence-bar">
+                            <div class="confidence-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="result-card final-emotion">
+                        <h4>Combined Analysis</h4>
+                        <div id="final-emotion" class="result-value">Analyzing...</div>
+                        <div class="emotion-emoji" id="emotion-emoji">😊</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="music-recommendation" class="music-recommendation hidden">
+            <div class="music-header">
+                <h3>🎵 Music Recommendation</h3>
+                <p>Based on your current mood, I think this song might help:</p>
+            </div>
+            <div class="song-info">
+                <div id="song-title" class="song-title">Song Title</div>
+                <div id="song-artist" class="song-artist">Artist Name</div>
+                <div id="song-genre" class="song-genre">Genre</div>
+                <a id="spotify-link" href="#" target="_blank" class="spotify-btn">Listen on Spotify</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Use CDN for face-api.js -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="js/webcam.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
