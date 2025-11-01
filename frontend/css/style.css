@@ -18,7 +18,7 @@ body {
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    position: relative; /* Added for loading overlay positioning */
+    position: relative;
 }
 
 .header {
@@ -44,7 +44,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 30px;
     padding: 30px;
-    position: relative; /* Added for loading overlay */
+    position: relative;
 }
 
 .chat-section {
@@ -187,6 +187,14 @@ body {
     transform: none;
 }
 
+.camera-btn.stopped {
+    background: #10b981;
+}
+
+.camera-btn.started {
+    background: #ef4444;
+}
+
 .video-container {
     position: relative;
     width: 320px;
@@ -226,6 +234,8 @@ body {
 }
 
 .result-card {
+    display: block;
+    animation: fadeIn 0.5s ease-out;
     background: white;
     padding: 20px;
     border-radius: 12px;
@@ -243,7 +253,7 @@ body {
     font-size: 1.1rem;
     font-weight: 600;
     color: #1e293b;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .confidence-bar {
@@ -251,6 +261,7 @@ body {
     background: #e2e8f0;
     border-radius: 4px;
     overflow: hidden;
+    margin-top: 5px;
 }
 
 .confidence-fill {
@@ -273,6 +284,142 @@ body {
     font-size: 2rem;
     text-align: center;
     margin-top: 10px;
+}
+
+/* Decision Breakdown Styles */
+.decision-breakdown-card {
+    display: block !important;
+    border-left: 4px solid #8b5cf6 !important;
+    background: #f3e8ff !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
+    margin-top: 10px;
+    z-index: 10;
+}
+
+.decision-breakdown-card h4 {
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.breakdown-content {
+    margin-top: 15px;
+}
+
+.weight-distribution {
+    margin-bottom: 15px;
+}
+
+.weight-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.weight-label {
+    flex: 1;
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.weight-value {
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.weight-bar {
+    flex: 2;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.weight-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.text-fill {
+    background: linear-gradient(90deg, #10b981, #3b82f6);
+}
+
+.face-fill {
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.reliability-info {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 3px solid #4f46e5;
+}
+
+.reliability-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.reliability-item:last-child {
+    margin-bottom: 0;
+}
+
+.reliability-label {
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.reliability-value {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.decision-reason {
+    background: #f0f9ff;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 3px solid #0ea5e9;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.decision-reason strong {
+    color: #0369a1;
+}
+
+.masking-alert {
+    background: #fef2f2;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #dc2626;
+    margin-top: 10px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.masking-alert strong {
+    color: #dc2626;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.masking-details {
+    color: #7f1d1d;
+    font-size: 0.85rem;
+    line-height: 1.4;
 }
 
 .music-recommendation {
@@ -367,6 +514,7 @@ body {
 
 .hidden {
     display: none !important;
+    opacity: 0 !important;
 }
 
 /* Responsive Design */
@@ -386,6 +534,16 @@ body {
     .video-container {
         width: 280px;
         height: 210px;
+    }
+    
+    .weight-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+    }
+    
+    .weight-value {
+        text-align: left;
     }
 }
 
@@ -427,4 +585,16 @@ body {
     margin: 10px 0;
     text-align: center;
     border: 1px solid #bbf7d0;
+}
+
+/* Animation for new elements */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

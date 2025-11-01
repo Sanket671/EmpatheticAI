@@ -1,0 +1,152 @@
+Here are comprehensive test cases covering all scenarios to test your improved emotion detection system:
+
+## **Test Cases for Emotion Detection System**
+
+### **1. Clear Consistent Emotions (Baseline)**
+**Test Case 1: Genuine Happiness**
+- **Text**: "I'm feeling amazing today! Just got great news and everything is perfect!"
+- **Face Expression**: Happy (big smile)
+- **Expected**: Happy (both agree)
+
+**Test Case 2: Genuine Sadness**
+- **Text**: "I'm really sad today. My pet passed away and I feel empty inside."
+- **Face Expression**: Sad (frowning, downturned mouth)
+- **Expected**: Sad (both agree)
+
+### **2. Emotional Masking Scenarios**
+**Test Case 3: Hidden Sadness with Fake Smile**
+- **Text**: "I'm feeling really depressed and lonely, but don't worry about me 😊"
+- **Face Expression**: Happy/Neutral (forced smile)
+- **Expected**: Sad (text trusted due to strong emotional words + masking indicators)
+
+**Test Case 4: Hidden Anger with Calm Face**
+- **Text**: "I'm absolutely furious about what happened, but I'll just keep quiet about it"
+- **Face Expression**: Neutral
+- **Expected**: Angry (text trusted - strong negative emotion with neutral face)
+
+**Test Case 5: Anxiety with Smiling Face**
+- **Text**: "I'm terrified about my future and having panic attacks, but I'm fine really"
+- **Face Expression**: Happy
+- **Expected**: Fear (text trusted - strong fear words with incongruent happy face)
+
+### **3. Sarcasm & Ironic Statements**
+**Test Case 6: Sarcastic Happiness**
+- **Text**: "Oh great, just wonderful! Another problem to deal with. I'm so happy!"
+- **Face Expression**: Angry/Neutral
+- **Expected**: Angry (context shows sarcasm + facial expression)
+
+**Test Case 7: Sarcastic Compliments**
+- **Text**: "You're just amazing at ruining everything. Fantastic job!"
+- **Face Expression**: Angry
+- **Expected**: Angry (sarcastic text + angry face)
+
+### **4. Contradictory Signals**
+**Test Case 8: Positive Text, Negative Face**
+- **Text**: "I'm having the best day ever!"
+- **Face Expression**: Sad
+- **Expected**: Sad (face trusted - short positive text with strong negative face)
+
+**Test Case 9: Negative Text, Positive Face**
+- **Text**: "Bad"
+- **Face Expression**: Happy
+- **Expected**: Happy (face trusted - very short negative text with strong positive face)
+
+### **5. Detailed vs Brief Text**
+**Test Case 10: Detailed Negative Story**
+- **Text**: "I've been struggling with depression for months. Every day feels like a battle and I can't find joy in anything anymore. It's like I'm carrying this heavy weight all the time."
+- **Face Expression**: Neutral
+- **Expected**: Sad (text trusted - detailed negative content)
+
+**Test Case 11: Brief Positive**
+- **Text**: "Good"
+- **Face Expression**: Neutral
+- **Expected**: Neutral/Happy (low confidence due to brief text)
+
+### **6. Minimization Language**
+**Test Case 12: Classic "I'm Fine"**
+- **Text**: "I'm fine, everything's okay, no problems at all"
+- **Face Expression**: Sad
+- **Expected**: Sad (face trusted - minimization language detected)
+
+**Test Case 13: Downplaying Serious Issues**
+- **Text**: "It's nothing really, just feeling a bit down but I'll manage"
+- **Face Expression**: Very Sad
+- **Expected**: Sad (face trusted - downplaying clear distress)
+
+### **7. Mixed Emotional States**
+**Test Case 14: Bittersweet**
+- **Text**: "I got the job but I have to move away from all my friends and family"
+- **Face Expression**: Mixed (slight smile but worried eyes)
+- **Expected**: Sad/Fear (negative aspects dominate)
+
+**Test Case 15: Anxious Excitement**
+- **Text**: "I'm so excited but also really nervous about this opportunity"
+- **Face Expression**: Surprise/Fear
+- **Expected**: Fear (anxiety dominates excitement)
+
+### **8. Strong Emotional Words**
+**Test Case 16: Extreme Anger**
+- **Text**: "I'm absolutely enraged and furious about this injustice!"
+- **Face Expression**: Neutral
+- **Expected**: Angry (text trusted - strong emotional words)
+
+**Test Case 17: Extreme Fear**
+- **Text**: "I'm terrified and panicking right now, I don't know what to do"
+- **Face Expression**: Neutral
+- **Expected**: Fear (text trusted - strong fear indicators)
+
+### **9. Cultural/Social Masking**
+**Test Case 18: Social Pressure to Smile**
+- **Text**: "I have to keep smiling for everyone else even though I'm breaking inside"
+- **Face Expression**: Happy
+- **Expected**: Sad (text explicitly states masking)
+
+### **10. Low Confidence Scenarios**
+**Test Case 19: Ambiguous Text**
+- **Text**: "I don't know how I feel"
+- **Face Expression**: Neutral (low confidence)
+- **Expected**: Neutral (both low confidence)
+
+**Test Case 20: Contradictory Low Confidence**
+- **Text**: "Maybe good?"
+- **Face Expression**: Sad (low confidence)
+- **Expected**: Neutral (balanced low confidence)
+
+## **Testing Methodology:**
+
+### **How to Test Each Case:**
+1. **Set up the face expression**: Look at the camera with the specified expression
+2. **Enter the text**: Type the exact test case text
+3. **Observe the results**: Check:
+   - Final emotion decision
+   - Weight distribution (text vs face)
+   - Masking detection alerts
+   - Decision reasoning
+
+### **Expected System Behavior:**
+- **Masking Detection**: Should trigger when strong negative text conflicts with neutral/positive face
+- **Text Priority**: Should increase with text length and emotional word strength
+- **Face Priority**: Should dominate for brief, ambiguous text with clear facial expressions
+- **Transparency**: Decision breakdown should clearly explain why each choice was made
+
+### **Key Patterns to Verify:**
+✅ **Text dominates when**: Detailed, emotionally strong, contradicts face  
+✅ **Face dominates when**: Clear expression, brief/ambiguous text  
+✅ **Masking detected when**: "I'm fine" language + negative face, or strong negative text + positive face  
+✅ **Balanced when**: Both modalities have moderate confidence and agree
+
+### **Critical Success Indicators:**
+1. **Your friend's scenario** (hiding pain with smile) should be correctly identified as sadness
+2. **Sarcasm** should be detected as the underlying negative emotion
+3. **Minimization language** ("I'm fine") should not be taken at face value
+4. **Detailed emotional sharing** should be given appropriate weight
+
+## **Quick Validation Tests:**
+
+**Run these 3 critical tests first:**
+
+1. **"I'm crying inside but smiling outside 😊"** + Happy face → Should detect sadness + masking
+2. **"Everything is perfect!"** + Sad face → Should detect sadness (face trusted for brief text)
+3. **Long detailed sad story** + Neutral face → Should detect sadness (text trusted for detailed content)
+
+These test cases cover the complete spectrum of emotional expression, masking, and the nuanced scenarios your project aims to handle, especially people hiding their true feelings like your friend's situation.

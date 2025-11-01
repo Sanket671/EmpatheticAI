@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional
+from tensorflow.keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, GlobalAveragePooling1D
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
@@ -20,49 +20,74 @@ class SentimentAnalyzer:
         self.vocab_size = 10000
         self.embedding_dim = 100
 
-        # Paths to persisted artifacts
-        model_path = 'models/sentiment_classifier_1.h5'
-        tokenizer_path = 'models/sentiment_tokenizer.pkl'
-        encoder_path = 'models/sentiment_encoder.pkl'
+        # Enhanced emotion lexicon with sarcasm and mixed emotion detection
+        self.emotion_lexicon = {
+            'angry': {
+                'words': ['angry', 'mad', 'furious', 'rage', 'hate', 'frustrated', 'irritated', 'annoyed', 'pissed', 'upset', 'livid'],
+                'weight': 1.0,
+                'intensity': 'high'
+            },
+            'disgust': {
+                'words': ['disgust', 'disgusting', 'gross', 'nasty', 'revolting', 'sickening', 'repulsive', 'hate'],
+                'weight': 0.9,
+                'intensity': 'medium'
+            },
+            'fear': {
+                'words': ['scared', 'afraid', 'terrified', 'fear', 'anxious', 'worried', 'nervous', 'panic', 'anxiety', 'frightened'],
+                'weight': 0.9,
+                'intensity': 'high'
+            },
+            'happy': {
+                'words': ['happy', 'joy', 'excited', 'delighted', 'pleased', 'ecstatic', 'thrilled', 'wonderful', 'good', 'great', 'amazing'],
+                'weight': 1.0,
+                'intensity': 'high'
+            },
+            'sad': {
+                'words': ['sad', 'unhappy', 'depressed', 'miserable', 'heartbroken', 'sorrow', 'grief', 'tears', 'crying', 'hurt', 'devastated'],
+                'weight': 1.0,
+                'intensity': 'high'
+            },
+            'surprise': {
+                'words': ['surprised', 'shocked', 'amazed', 'astonished', 'unexpected', 'wow', 'surprise', 'stunned'],
+                'weight': 0.8,
+                'intensity': 'medium'
+            },
+            'neutral': {
+                'words': ['okay', 'fine', 'alright', 'normal', 'regular', 'usual', 'meh', 'whatever'],
+                'weight': 0.5,
+                'intensity': 'low'
+            }
+        }
 
-        # If all artifacts exist, try to load them. If loading fails or any
-        # artifact is missing, do NOT start training here (it blocks startup).
-        # Instead configure a lightweight fallback analyzer so the Flask app
-        # can start quickly and handle requests.
-        if os.path.exists(model_path) and os.path.exists(tokenizer_path) and os.path.exists(encoder_path):
-            try:
-                self.load_model(model_path, tokenizer_path, encoder_path)
-            except Exception as e:
-                print(f"Failed to load saved sentiment model: {e}")
-                print("Falling back to lightweight sentiment analyzer.")
-                self.setup_fallback()
-        else:
-            print("Trained sentiment model/tokenizer not found. Using lightweight fallback analyzer.")
-            self.setup_fallback()
+        # Sarcasm indicators
+        self.sarcasm_indicators = {
+            'excessive_positive': ['so happy', 'just wonderful', 'fantastic', 'perfect', 'great job', 'amazing', 'lovely'],
+            'contrast_words': ['but', 'however', 'although', 'yet', 'except'],
+            'sarcastic_phrases': ['oh great', 'wow amazing', 'just what i needed', 'fantastic news', 'wonderful timing'],
+            'exaggeration': ['best day ever', 'absolutely thrilled', 'completely overjoyed', 'extremely happy']
+        }
+
+        # Mixed emotion patterns
+        self.mixed_emotion_patterns = {
+            'bittersweet': [('happy', 'sad'), ('excited', 'nervous'), ('proud', 'sad')],
+            'anxious_excitement': [('excited', 'fear'), ('happy', 'anxious')],
+            'angry_sad': [('angry', 'sad'), ('frustrated', 'disappointed')]
+        }
+
+        print("🔄 Using enhanced emotion analyzer with sarcasm detection...")
+        self.setup_fallback()
 
     def setup_fallback(self):
-        """Configure a simple keyword-based sentiment analyzer used when
-        the TensorFlow model is not available. This avoids training at
-        server start and keeps the service responsive."""
-        # No TF model or tokenizer
+        """Configure enhanced keyword-based sentiment analyzer"""
         self.model = None
         self.tokenizer = None
-        # Prepare a simple label encoder that maps indices to labels
         try:
             self.label_encoder = LabelEncoder()
-            self.label_encoder.fit(['negative', 'neutral', 'positive'])
-        except Exception:
-            # LabelEncoder is only used when a TF model exists; fallback can operate without it
+            self.label_encoder.fit(['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral'])
+        except Exception as e:
+            print(f"Label encoder setup failed: {e}")
             self.label_encoder = None
 
-        # Define simple positive/negative keyword sets
-        self._positive_keywords = set([
-            'good', 'great', 'happy', 'joy', 'amazing', 'love', 'wonderful', 'excellent', 'best', 'awesome', 'glad'
-        ])
-        self._negative_keywords = set([
-            'bad', 'sad', 'terrible', 'hate', 'awful', 'worst', 'angry', 'depress', 'sucks', 'pain', 'upset'
-        ])
-    
     def preprocess_text(self, text):
         """Clean and preprocess text data"""
         if not isinstance(text, str):
@@ -73,215 +98,170 @@ class SentimentAnalyzer:
         text = re.sub(r'\s+', ' ', text).strip()
         return text
     
-    def create_model(self):
-        """Create LSTM-based sentiment analysis model"""
-        model = Sequential([
-            Embedding(self.vocab_size, self.embedding_dim, input_length=self.max_sequence_length),
-            Bidirectional(LSTM(64, return_sequences=True)),
-            Dropout(0.3),
-            Bidirectional(LSTM(32)),
-            Dropout(0.3),
-            Dense(64, activation='relu'),
-            Dropout(0.2),
-            Dense(32, activation='relu'),
-            Dense(3, activation='softmax')  # positive, negative, neutral
-        ])
+    def detect_sarcasm(self, text):
+        """Enhanced sarcasm detection using multiple indicators"""
+        processed_text = text.lower()
+        sarcasm_score = 0
         
-        model.compile(
-            optimizer='adam',
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
-        )
+        # Check for excessive positive language in negative context
+        positive_words_in_negative = 0
+        negative_context_indicators = ['not', "don't", "can't", "won't", 'never', 'bad', 'terrible', 'awful']
         
-        return model
-    
-    def load_sentiment_dataset(self):
-        """Load and preprocess the Sentiment140 dataset"""
-        print("Loading Sentiment140 dataset...")
+        for phrase in self.sarcasm_indicators['excessive_positive']:
+            if phrase in processed_text:
+                sarcasm_score += 0.3
+                # If excessive positive phrase appears with negative context, higher sarcasm
+                if any(neg in processed_text for neg in negative_context_indicators):
+                    sarcasm_score += 0.4
         
-        try:
-            # Load the dataset
-            df = pd.read_csv('../datasets/training.1600000.processed.noemoticon.csv', 
-                           encoding='latin-1', header=None)
-            
-            # The dataset has columns: target, ids, date, flag, user, text
-            df.columns = ['target', 'ids', 'date', 'flag', 'user', 'text']
-            
-            # Map target to sentiment (0: negative, 2: neutral, 4: positive)
-            # For this dataset, we only have negative (0) and positive (4)
-            # We'll sample to get balanced classes and add some neutral samples
-            negative_samples = df[df['target'] == 0].sample(n=10000, random_state=42)
-            positive_samples = df[df['target'] == 4].sample(n=10000, random_state=42)
-            
-            # Create some neutral samples from the data
-            neutral_texts = [
-                "I went to the store today",
-                "The weather is normal today",
-                "I completed my work tasks",
-                "Today was a regular day",
-                "I had lunch at the usual time",
-                "The meeting proceeded as planned",
-                "I read a book for about an hour",
-                "Today followed the normal routine",
-                "I walked the dog around the neighborhood",
-                "It was an average day with typical activities"
-            ] * 2000  # Multiply to get enough samples
-            
-            # Combine all data
-            texts = list(negative_samples['text'].values) + list(positive_samples['text'].values) + neutral_texts[:20000]
-            labels = ['negative'] * len(negative_samples) + ['positive'] * len(positive_samples) + ['neutral'] * 20000
-            
-            return texts, labels
-            
-        except Exception as e:
-            print(f"Error loading dataset: {e}")
-            print("Using fallback dataset...")
-            return self.generate_fallback_data()
-    
-    def generate_fallback_data(self):
-        """Generate fallback sentiment data"""
-        print("Generating fallback sentiment data...")
+        # Check for contrast words that might indicate sarcasm
+        contrast_count = sum(1 for word in self.sarcasm_indicators['contrast_words'] if word in processed_text)
+        sarcasm_score += contrast_count * 0.2
         
-        positive_texts = [
-            "I had an amazing day today! Everything went perfectly.",
-            "I'm so happy and excited about this wonderful news!",
-            "This is absolutely fantastic and incredible!",
-            "I feel great and everything is going well for me.",
-            "What a beautiful day full of joy and happiness!",
-            "I'm thrilled with the results and very satisfied.",
-            "This makes me so happy and content with life.",
-            "Wonderful experience that brought me so much joy!",
-            "I'm overjoyed and everything feels perfect.",
-            "Such a positive and uplifting moment in my life!"
-        ] * 1000
+        # Check for specific sarcastic phrases
+        for phrase in self.sarcasm_indicators['sarcastic_phrases']:
+            if phrase in processed_text:
+                sarcasm_score += 0.5
         
-        negative_texts = [
-            "I had a terrible day and everything went wrong.",
-            "I'm feeling so sad and disappointed right now.",
-            "This is absolutely awful and heartbreaking.",
-            "I feel miserable and nothing is going right.",
-            "What a horrible day full of sadness and pain.",
-            "I'm devastated by this terrible news.",
-            "This makes me so unhappy and frustrated.",
-            "Awful experience that left me feeling empty.",
-            "I'm heartbroken and everything feels wrong.",
-            "Such a negative and depressing situation."
-        ] * 1000
+        # Check for exaggeration in emotional language
+        for phrase in self.sarcasm_indicators['exaggeration']:
+            if phrase in processed_text:
+                sarcasm_score += 0.4
         
-        neutral_texts = [
-            "I went to the store today to buy some groceries.",
-            "The weather is normal today, not too hot or cold.",
-            "I completed my work tasks as scheduled.",
-            "Today was a regular day with nothing special.",
-            "I had lunch at the usual time with regular food.",
-            "The meeting proceeded as planned without issues.",
-            "I read a book for about an hour this evening.",
-            "Today followed the normal routine without changes.",
-            "I walked the dog around the neighborhood park.",
-            "It was an average day with typical activities."
-        ] * 1000
+        # Punctuation analysis - multiple exclamation marks can indicate sarcasm
+        if processed_text.count('!') > 2:
+            sarcasm_score += 0.3
         
-        texts = positive_texts + negative_texts + neutral_texts
-        labels = ['positive'] * len(positive_texts) + ['negative'] * len(negative_texts) + ['neutral'] * len(neutral_texts)
+        # Contextual clues - if text says positive but has angry/sad indicators
+        angry_sad_indicators = ['angry', 'mad', 'sad', 'upset', 'frustrated', 'annoyed']
+        if any(indicator in processed_text for indicator in angry_sad_indicators) and any(positive in processed_text for positive in ['happy', 'good', 'great']):
+            sarcasm_score += 0.4
         
-        return texts, labels
-    
-    def train_model(self):
-        """Train the sentiment analysis model"""
-        print("Training sentiment analysis model...")
+        return min(sarcasm_score, 1.0)
+
+    def detect_mixed_emotions(self, emotion_scores):
+        """Detect if multiple emotions are strongly present"""
+        # Get top 2 emotions
+        sorted_emotions = sorted(emotion_scores.items(), key=lambda x: x[1], reverse=True)
+        if len(sorted_emotions) < 2:
+            return None
         
-        # Load dataset
-        texts, labels = self.load_sentiment_dataset()
+        top_emotion, top_score = sorted_emotions[0]
+        second_emotion, second_score = sorted_emotions[1]
         
-        # Preprocess texts
-        processed_texts = [self.preprocess_text(text) for text in texts]
+        # If second emotion is within 30% of top emotion, consider it mixed
+        if second_score > 0 and top_score > 0 and (second_score / top_score) > 0.7:
+            return (top_emotion, second_emotion)
         
-        # Initialize and fit tokenizer
-        self.tokenizer = Tokenizer(num_words=self.vocab_size, oov_token='<OOV>')
-        self.tokenizer.fit_on_texts(processed_texts)
+        return None
+
+    def enhanced_emotion_analysis(self, text):
+        """Enhanced emotion analysis with sarcasm and mixed emotion detection"""
+        processed_text = self.preprocess_text(text)
+        words = processed_text.split()
         
-        # Convert texts to sequences
-        sequences = self.tokenizer.texts_to_sequences(processed_texts)
-        padded_sequences = pad_sequences(sequences, maxlen=self.max_sequence_length)
+        emotion_scores = {emotion: 0 for emotion in self.emotion_lexicon.keys()}
         
-        # Encode labels
-        self.label_encoder = LabelEncoder()
-        encoded_labels = self.label_encoder.fit_transform(labels)
-        categorical_labels = tf.keras.utils.to_categorical(encoded_labels)
+        # Score each word
+        for word in words:
+            for emotion, data in self.emotion_lexicon.items():
+                if word in data['words']:
+                    emotion_scores[emotion] += data['weight']
         
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            padded_sequences, categorical_labels, test_size=0.2, random_state=42
-        )
+        # Boost scores for emotional phrases and patterns
+        emotional_phrases = {
+            'angry': ['so angry', 'very mad', 'extremely frustrated', 'pissed off', 'losing my mind'],
+            'sad': ['so sad', 'very unhappy', 'extremely depressed', 'crying my eyes', 'heart broken', 'feeling empty'],
+            'fear': ['so scared', 'very afraid', 'terrified of', 'anxious about', 'panic attack'],
+            'happy': ['so happy', 'very excited', 'extremely joyful', 'over the moon', 'thrilled to'],
+            'disgust': ['so disgusting', 'completely grossed', 'totally repulsed'],
+            'surprise': ['completely shocked', 'totally surprised', 'absolutely amazed']
+        }
         
-        # Create and train model
-        self.model = self.create_model()
+        for emotion, phrases in emotional_phrases.items():
+            for phrase in phrases:
+                if phrase in processed_text:
+                    emotion_scores[emotion] += 2.0  # Significant boost for phrases
         
-        print("Starting model training...")
-        history = self.model.fit(
-            X_train, y_train,
-            epochs=10,
-            batch_size=32,
-            validation_data=(X_test, y_test),
-            verbose=1
-        )
+        # Special handling for masking patterns
+        if 'crying inside' in processed_text or 'smiling outside' in processed_text:
+            emotion_scores['sad'] += 3.0
+        if 'i\'m fine' in processed_text and any(word in processed_text for word in ['sad', 'angry', 'hurt', 'depressed']):
+            emotion_scores['sad'] += 2.0
         
-        print("Sentiment model training completed!")
+        # Detect sarcasm
+        sarcasm_score = self.detect_sarcasm(text)
+        if sarcasm_score > 0.6:
+            # If sarcasm detected and dominant emotion is positive, flip to negative
+            dominant_emotion = max(emotion_scores, key=emotion_scores.get)
+            if dominant_emotion in ['happy', 'surprise']:
+                # Reduce positive emotion score, boost negative emotions
+                emotion_scores[dominant_emotion] *= 0.3
+                emotion_scores['angry'] += emotion_scores[dominant_emotion] * 2
+                emotion_scores['sad'] += emotion_scores[dominant_emotion] * 1.5
+        
+        # Detect mixed emotions
+        mixed_emotions = self.detect_mixed_emotions(emotion_scores)
+        
+        # Normalize scores
+        if words:
+            for emotion in emotion_scores:
+                emotion_scores[emotion] = emotion_scores[emotion] / len(words) * 10
+        
+        # Find dominant emotion
+        dominant_emotion = max(emotion_scores, key=emotion_scores.get)
+        max_score = emotion_scores[dominant_emotion]
+        
+        # Handle mixed emotions by adjusting confidence
+        if mixed_emotions and max_score > 0:
+            primary, secondary = mixed_emotions
+            # For mixed emotions, we return the primary but with adjusted confidence
+            confidence = min(max_score / 8.0, 1.0)  # Lower confidence for mixed emotions
+            return dominant_emotion, confidence, mixed_emotions, sarcasm_score
+        else:
+            # Calculate confidence for single emotion
+            if max_score > 0:
+                confidence = min(max_score / 5.0, 1.0)  # Scale to 0-1
+            else:
+                dominant_emotion = 'neutral'
+                confidence = 0.3
+        
+        # Ensure we return only valid emotions
+        valid_emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
+        if dominant_emotion not in valid_emotions:
+            dominant_emotion = 'neutral'
+        
+        return dominant_emotion, confidence, None, sarcasm_score
     
     def predict(self, text):
-        """Predict sentiment of input text"""
+        """Predict emotion of input text with enhanced analysis"""
         if not text or not text.strip():
-            return "neutral", 0.5
-        # If the TF model is not loaded, use a lightweight fallback keyword-based predictor
-        if self.model is None:
-            try:
-                processed_text = self.preprocess_text(text)
-                words = set(processed_text.split())
-                pos_hits = len(words & self._positive_keywords)
-                neg_hits = len(words & self._negative_keywords)
-
-                if pos_hits == 0 and neg_hits == 0:
-                    return 'neutral', 0.5
-                elif pos_hits >= neg_hits:
-                    conf = min(0.6 + 0.1 * pos_hits, 0.95)
-                    return 'positive', conf
-                else:
-                    conf = min(0.6 + 0.1 * neg_hits, 0.95)
-                    return 'negative', conf
-            except Exception as e:
-                print(f"Fallback sentiment prediction error: {e}")
-                return 'neutral', 0.5
-
-        # Otherwise use the full TF model
-        try:
-            processed_text = self.preprocess_text(text)
-            sequence = self.tokenizer.texts_to_sequences([processed_text])
-            if not sequence or len(sequence[0]) == 0:
-                return "neutral", 0.5
-
-            padded_sequence = pad_sequences(sequence, maxlen=self.max_sequence_length)
-            prediction = self.model.predict(padded_sequence, verbose=0)
-            sentiment_idx = np.argmax(prediction)
-            confidence = np.max(prediction)
-            sentiment = self.label_encoder.inverse_transform([sentiment_idx])[0]
-            return sentiment, confidence
-        except Exception as e:
-            print(f"Error in sentiment prediction: {e}")
-            return "neutral", 0.5
+            return "neutral", 0.3, None, 0.0
+        
+        # Use enhanced emotion analysis (bypassing TensorFlow model for now)
+        return self.enhanced_emotion_analysis(text)
     
     def save_model(self, model_path, tokenizer_path, encoder_path):
         """Save model, tokenizer and encoder"""
         os.makedirs('models', exist_ok=True)
-        self.model.save(model_path)
-        with open(tokenizer_path, 'wb') as f:
-            pickle.dump(self.tokenizer, f)
-        with open(encoder_path, 'wb') as f:
-            pickle.dump(self.label_encoder, f)
+        if self.model:
+            self.model.save(model_path)
+        if self.tokenizer:
+            with open(tokenizer_path, 'wb') as f:
+                pickle.dump(self.tokenizer, f)
+        if self.label_encoder:
+            with open(encoder_path, 'wb') as f:
+                pickle.dump(self.label_encoder, f)
     
     def load_model(self, model_path, tokenizer_path, encoder_path):
         """Load model, tokenizer and encoder"""
-        self.model = load_model(model_path)
-        with open(tokenizer_path, 'rb') as f:
-            self.tokenizer = pickle.load(f)
-        with open(encoder_path, 'rb') as f:
-            self.label_encoder = pickle.load(f)
+        try:
+            self.model = load_model(model_path)
+            with open(tokenizer_path, 'rb') as f:
+                self.tokenizer = pickle.load(f)
+            with open(encoder_path, 'rb') as f:
+                self.label_encoder = pickle.load(f)
+            print("✅ Model loaded successfully")
+        except Exception as e:
+            print(f"❌ Model loading failed: {e}")
+            self.setup_fallback()
