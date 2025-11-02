@@ -1,3 +1,30 @@
+/* CRITICAL FIX: Enhanced hidden class with multiple properties */
+.hidden {
+    display: none ;
+    opacity: 0 ;
+    visibility: hidden ;
+    pointer-events: none ;
+}
+
+/* CRITICAL FIX: Force decision breakdown to be visible when not hidden */
+.decision-breakdown-card {
+    display: block;
+    border-left: 4px solid #8b5cf6;
+    background: #f3e8ff;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
+    margin-top: 10px;
+    z-index: 10;
+}
+
+/* Ensure all result cards are properly displayed */
+.result-card {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Rest of your existing CSS remains the same... */
 * {
     margin: 0;
     padding: 0;
@@ -288,9 +315,8 @@ body {
 
 /* Decision Breakdown Styles */
 .decision-breakdown-card {
-    display: block !important;
-    border-left: 4px solid #8b5cf6 !important;
-    background: #f3e8ff !important;
+    border-left: 4px solid #8b5cf6 ;
+    background: #f3e8ff ;
     box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
     margin-top: 10px;
     z-index: 10;
@@ -510,11 +536,6 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-.hidden {
-    display: none !important;
-    opacity: 0 !important;
 }
 
 /* Responsive Design */
