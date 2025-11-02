@@ -1,9 +1,9 @@
 /* CRITICAL FIX: Enhanced hidden class with multiple properties */
 .hidden {
-    display: none ;
-    opacity: 0 ;
-    visibility: hidden ;
-    pointer-events: none ;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 /* CRITICAL FIX: Force decision breakdown to be visible when not hidden */
@@ -22,6 +22,156 @@
     opacity: 1;
     visibility: visible;
     animation: fadeIn 0.5s ease-out;
+}
+
+/* Enhanced weight explanation styling */
+.weight-explanation {
+    background: #f8f9fa !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    border-left: 3px solid #4f46e5 !important;
+    margin-top: 15px !important;
+    font-size: 0.85rem !important;
+    line-height: 1.4 !important;
+    color: #374151 !important;
+}
+
+.weight-explanation strong {
+    color: #1e293b !important;
+}
+
+.weight-explanation br {
+    margin-bottom: 8px !important;
+}
+
+/* Enhanced decision reason styling */
+.decision-reason {
+    background: #f0f9ff !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    margin-bottom: 15px !important;
+    border-left: 3px solid #0ea5e9 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+}
+
+.decision-reason strong {
+    color: #0369a1 !important;
+    display: inline !important;
+}
+
+.decision-reason br {
+    margin-bottom: 8px !important;
+}
+
+/* Enhanced breakdown content */
+.breakdown-content {
+    margin-top: 15px;
+}
+
+.weight-distribution {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.weight-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.weight-label {
+    flex: 1;
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.weight-value {
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.weight-bar {
+    flex: 2;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.weight-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.text-fill {
+    background: linear-gradient(90deg, #10b981, #3b82f6);
+}
+
+.face-fill {
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.reliability-info {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 3px solid #4f46e5;
+}
+
+.reliability-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.reliability-item:last-child {
+    margin-bottom: 0;
+}
+
+.reliability-label {
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.reliability-value {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.masking-alert {
+    background: #fef2f2;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #dc2626;
+    margin-top: 10px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.masking-alert strong {
+    color: #dc2626;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.masking-details {
+    color: #7f1d1d;
+    font-size: 0.85rem;
+    line-height: 1.4;
 }
 
 /* Rest of your existing CSS remains the same... */
@@ -311,141 +461,6 @@ body {
     font-size: 2rem;
     text-align: center;
     margin-top: 10px;
-}
-
-/* Decision Breakdown Styles */
-.decision-breakdown-card {
-    border-left: 4px solid #8b5cf6 ;
-    background: #f3e8ff ;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
-    margin-top: 10px;
-    z-index: 10;
-}
-
-.decision-breakdown-card h4 {
-    color: #7c3aed;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.breakdown-content {
-    margin-top: 15px;
-}
-
-.weight-distribution {
-    margin-bottom: 15px;
-}
-
-.weight-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12px;
-    gap: 10px;
-}
-
-.weight-label {
-    flex: 1;
-    font-weight: 500;
-    color: #475569;
-    font-size: 0.9rem;
-}
-
-.weight-value {
-    font-weight: 600;
-    color: #1e293b;
-    min-width: 40px;
-    text-align: right;
-    font-size: 0.9rem;
-}
-
-.weight-bar {
-    flex: 2;
-    height: 8px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.weight-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-}
-
-.text-fill {
-    background: linear-gradient(90deg, #10b981, #3b82f6);
-}
-
-.face-fill {
-    background: linear-gradient(90deg, #f59e0b, #ef4444);
-}
-
-.reliability-info {
-    background: #f8fafc;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border-left: 3px solid #4f46e5;
-}
-
-.reliability-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.reliability-item:last-child {
-    margin-bottom: 0;
-}
-
-.reliability-label {
-    font-weight: 500;
-    color: #475569;
-    font-size: 0.9rem;
-}
-
-.reliability-value {
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 0.9rem;
-}
-
-.decision-reason {
-    background: #f0f9ff;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border-left: 3px solid #0ea5e9;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.decision-reason strong {
-    color: #0369a1;
-}
-
-.masking-alert {
-    background: #fef2f2;
-    padding: 12px;
-    border-radius: 8px;
-    border-left: 3px solid #dc2626;
-    margin-top: 10px;
-    animation: fadeIn 0.5s ease-out;
-}
-
-.masking-alert strong {
-    color: #dc2626;
-    display: block;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-}
-
-.masking-details {
-    color: #7f1d1d;
-    font-size: 0.85rem;
-    line-height: 1.4;
 }
 
 .music-recommendation {

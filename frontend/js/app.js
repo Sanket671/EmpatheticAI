@@ -1,5 +1,5 @@
-// 🎯 EmpatheticAI v2.0 - WITH DECISION BREAKDOWN FIX
-console.log('🎯 EmpatheticAI v2.0 - Decision Breakdown FIXED');
+// 🎯 EmpatheticAI v4.0 - WITH SPECIFIC FACTOR EXPLANATIONS
+console.log('🎯 EmpatheticAI v4.0 - Specific Factor Explanations');
 
 class EmpatheticAI {
     constructor() {
@@ -61,7 +61,7 @@ class EmpatheticAI {
     }
 
     async handleUserInput() {
-        console.log('🔄 ======= START: handleUserInput v2.0 =======');
+        console.log('🔄 ======= START: handleUserInput v4.0 =======');
         
         if (!this.webcamHandler) {
             console.error('❌ Webcam handler not initialized');
@@ -113,7 +113,7 @@ class EmpatheticAI {
                 this.updateAnalysisResults(response);
                 console.log('✅ Analysis results updated');
                 
-                // THIS IS THE MISSING FUNCTION CALL - ADDED IN v2.0
+                // Enhanced decision breakdown with specific factor explanations
                 console.log('🔍 CALLING updateDecisionBreakdown NOW...');
                 this.updateDecisionBreakdown(response);
                 console.log('✅ Decision breakdown updated');
@@ -166,7 +166,7 @@ class EmpatheticAI {
     }
 
     updateDecisionBreakdown(data) {
-        console.log('📊 ======= START: updateDecisionBreakdown v2.0 =======');
+        console.log('📊 ======= START: updateDecisionBreakdown v4.0 =======');
         console.log('📊 Full response data received:', data);
         
         try {
@@ -175,9 +175,6 @@ class EmpatheticAI {
             const breakdownDiv = document.getElementById('decision-breakdown');
             if (!breakdownDiv) {
                 console.error('❌ CRITICAL: Decision breakdown element not found');
-                console.log('🔍 Searching for all elements with "decision" in ID:');
-                const allElements = Array.from(document.querySelectorAll('[id*="decision"]'));
-                allElements.forEach(el => console.log(`   - ${el.id}`));
                 return;
             }
             console.log('✅ Step 1: Breakdown div found');
@@ -189,16 +186,17 @@ class EmpatheticAI {
             breakdownDiv.style.visibility = 'visible';
             console.log('✅ Step 2: Breakdown made visible');
 
-            // Step 3: Check if we have fusion data
-            console.log('🔍 Step 3: Checking fusion_data in response');
-            if (!data.fusion_data) {
-                console.error('❌ No fusion_data in response');
+            // Step 3: Check if we have fusion data and factor details
+            console.log('🔍 Step 3: Checking fusion_data and factor_details in response');
+            if (!data.fusion_data || !data.factor_details) {
+                console.error('❌ No fusion_data or factor_details in response');
                 console.log('📊 Available keys in response:', Object.keys(data));
                 return;
             }
 
             const fusion = data.fusion_data;
-            console.log('✅ Step 3: Fusion data found:', fusion);
+            const factors = data.factor_details;
+            console.log('✅ Step 3: Fusion data and factors found:', { fusion, factors });
 
             // Step 4: Calculate percentages
             console.log('🔍 Step 4: Calculating percentages from fusion data');
@@ -235,10 +233,11 @@ class EmpatheticAI {
             console.log('   → Updating face-reliability');
             this.updateElement('face-reliability', `${faceReliabilityPercent}%`);
 
-            // Step 6: Update decision reason
-            console.log('🔍 Step 6: Updating decision reason');
-            const reasonText = this.formatDecisionReason(data.decision_reason, fusion.decision_context);
-            this.updateElement('decision-reason', `<strong>Decision Context:</strong> ${reasonText}`, true);
+            // Step 6: Update decision reason with SPECIFIC FACTOR EXPLANATIONS
+            console.log('🔍 Step 6: Updating decision reason with specific factors');
+            const detailedExplanation = this.generateSpecificFactorExplanation(data, fusion, factors);
+            
+            this.updateElement('decision-reason', detailedExplanation, true);
 
             // Step 7: Update masking alerts
             console.log('🔍 Step 7: Updating masking alerts');
@@ -251,6 +250,105 @@ class EmpatheticAI {
             console.error('Error:', error);
             console.error('Stack:', error.stack);
         }
+    }
+
+    generateSpecificFactorExplanation(data, fusion, factors) {
+        const textWeight = (fusion.text_weight * 100).toFixed(1);
+        const faceWeight = (fusion.face_weight * 100).toFixed(1);
+        const textReliability = (fusion.text_reliability * 100).toFixed(1);
+        const faceReliability = (fusion.face_reliability * 100).toFixed(1);
+        
+        let explanation = `<strong>🧠 Detailed Analysis Breakdown</strong><br><br>`;
+        
+        // WEIGHT CALCULATION EXPLANATION
+        explanation += `<strong>⚖️ Weight Calculation:</strong><br>`;
+        
+        const weightCalc = factors.weight_calculation;
+        explanation += `• <strong>Base Text Weight:</strong> ${(weightCalc.base_text_weight * 100).toFixed(1)}%<br>`;
+        explanation += `• <strong>Base Face Weight:</strong> ${(weightCalc.base_face_weight * 100).toFixed(1)}%<br>`;
+        explanation += `• <strong>Reason:</strong> ${this.formatWeightReason(weightCalc.weight_adjustment_reason)}<br>`;
+        explanation += `• <strong>Text Reliability Applied:</strong> ${(weightCalc.text_reliability_used * 100).toFixed(1)}%<br>`;
+        explanation += `• <strong>Face Reliability Applied:</strong> ${(weightCalc.face_reliability_used * 100).toFixed(1)}%<br>`;
+        explanation += `• <strong>Final Text Weight:</strong> ${textWeight}%<br>`;
+        explanation += `• <strong>Final Face Weight:</strong> ${faceWeight}%<br><br>`;
+        
+        // TEXT RELIABILITY FACTORS
+        explanation += `<strong>📝 Text Reliability Factors (${textReliability}%):</strong><br>`;
+        const textFactors = factors.text_reliability_factors;
+        
+        if (textFactors.base_confidence > 0) {
+            explanation += `• Base confidence: ${(textFactors.base_confidence * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.length_boost > 0) {
+            explanation += `• Text length boost: +${(textFactors.length_boost * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.emotional_words_boost > 0) {
+            explanation += `• Emotional words: +${(textFactors.emotional_words_boost * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.contradiction_penalty < 0) {
+            explanation += `• Contradiction penalty: ${(textFactors.contradiction_penalty * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.masking_boost > 0) {
+            explanation += `• Masking detection: +${(textFactors.masking_boost * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.sarcasm_boost > 0) {
+            explanation += `• Sarcasm adjustment: +${(textFactors.sarcasm_boost * 100).toFixed(1)}%<br>`;
+        }
+        if (textFactors.mixed_emotion_penalty < 0) {
+            explanation += `• Mixed emotions: ${(textFactors.mixed_emotion_penalty * 100).toFixed(1)}%<br>`;
+        }
+        
+        explanation += `<br>`;
+        
+        // FACE RELIABILITY FACTORS
+        explanation += `<strong>😊 Face Reliability Factors (${faceReliability}%):</strong><br>`;
+        const faceFactors = factors.face_reliability_factors;
+        
+        explanation += `• Base confidence: ${(faceFactors.base_confidence * 100).toFixed(1)}%<br>`;
+        explanation += `• Authenticity factor: ${(faceFactors.authenticity_factor * 100).toFixed(1)}%<br>`;
+        explanation += `• <em>${this.getAuthenticityExplanation(data.facial_emotion)}</em><br><br>`;
+        
+        // CONTEXT FACTORS
+        explanation += `<strong>🔍 Context Analysis:</strong><br>`;
+        const context = factors.context_factors;
+        
+        explanation += `• Text length: ${context.text_length} characters<br>`;
+        explanation += `• Sarcasm score: ${(context.sarcasm_score * 100).toFixed(1)}%<br>`;
+        explanation += `• Mixed emotions: ${context.mixed_emotions_detected ? 'Yes' : 'No'}<br>`;
+        explanation += `• Original face confidence: ${(context.face_confidence_original * 100).toFixed(1)}%<br>`;
+        explanation += `• Original text confidence: ${(context.text_confidence_original * 100).toFixed(1)}%<br>`;
+        
+        // FINAL FORMULA
+        explanation += `<br><strong>🎯 Final Emotion Calculation:</strong><br>`;
+        explanation += `Final = (Text: ${data.text_emotion} × ${textWeight}%) + (Face: ${data.facial_emotion} × ${faceWeight}%)<br>`;
+        explanation += `Result: <strong>${data.final_emotion}</strong>`;
+        
+        return explanation;
+    }
+
+    formatWeightReason(reason) {
+        const reasonMap = {
+            'High sarcasm detected - text prioritized': 'High sarcasm detected in your text, so we prioritized text analysis',
+            'Substantial text input - text weighted more': 'Your text was detailed, so it carried more weight',
+            'Strong facial expression with minimal text - face weighted more': 'Clear facial expression with minimal text, so face carried more weight',
+            'Emotional masking suspected - text trusted more': 'Possible emotional masking detected, so we trusted your words more',
+            'Mixed emotions detected - complex analysis': 'Mixed emotions detected, requiring balanced analysis',
+            'Balanced base weights': 'Balanced consideration of both inputs'
+        };
+        return reasonMap[reason] || reason;
+    }
+
+    getAuthenticityExplanation(emotion) {
+        const explanations = {
+            'happy': 'Smiles can be easily faked, so we apply a moderate authenticity factor',
+            'neutral': 'Neutral expressions often mask true feelings, so we apply a low authenticity factor',
+            'sad': 'Genuine sadness is harder to fake, so we apply a high authenticity factor',
+            'angry': 'Subtle anger is difficult to fake convincingly, so we apply a high authenticity factor',
+            'fear': 'Complex emotion with specific markers, moderate authenticity factor applied',
+            'surprise': 'Genuine surprise has specific physiological markers, high authenticity factor',
+            'disgust': 'Subtle disgust is hard to fake, high authenticity factor applied'
+        };
+        return explanations[emotion] || 'Standard authenticity factor applied';
     }
 
     updateElement(elementId, content, isHTML = false) {
@@ -341,27 +439,6 @@ class EmpatheticAI {
             'mixed_emotions_detected': 'Multiple strong emotions detected simultaneously'
         };
         return mapping[indicator] || indicator;
-    }
-
-    formatDecisionReason(reason, context) {
-        const mapping = {
-            'both_modalities_agree': 'Text and facial analysis agree',
-            'text_trusted_potential_masking': 'Text trusted more (possible emotional masking detected)',
-            'weighted_combination': 'Combined analysis of both text and facial expression',
-            'substantial_text_input': 'Detailed text input given priority',
-            'strong_facial_expression': 'Clear facial expression detected',
-            'emotional_masking_suspected': 'Possible emotional masking detected',
-            'balanced_analysis': 'Balanced consideration of both inputs',
-            'high_sarcasm_detected': 'High sarcasm detected - text analysis prioritized',
-            'mixed_emotions_detected': 'Mixed emotions detected - complex analysis required',
-            'sarcasm_overrides_face': 'Sarcasm detection overrides facial expression',
-            'mixed_emotion_resolved': 'Mixed emotions resolved to dominant emotion'
-        };
-        
-        const reasonText = mapping[reason] || reason || 'Analyzing emotional signals';
-        const contextText = context ? ` - ${context.replace(/_/g, ' ')}` : '';
-        
-        return reasonText + contextText;
     }
 
     updateAnalysisResults(data) {
@@ -535,6 +612,6 @@ class EmpatheticAI {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 DOM fully loaded, starting EmpatheticAI v2.0...');
+    console.log('🌐 DOM fully loaded, starting EmpatheticAI v4.0...');
     window.empatheticAI = new EmpatheticAI();
 });
