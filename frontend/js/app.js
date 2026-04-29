@@ -1,31 +1,29 @@
-// 🎯 EmpatheticAI v4.0 - WITH SPECIFIC FACTOR EXPLANATIONS + CHART + PLAYLIST
-console.log('🎯 EmpatheticAI v5.0 - Therapy Edition');
+// 🎯 EmpatheticAI v6.0 - Voice, Export & Dark Mode
+console.log('🎯 EmpatheticAI v6.0 - Full Edition');
 
 class EmpatheticAI {
     constructor() {
         this.webcamHandler = null;
         this.isProcessing = false;
         this.backendURL = 'http://localhost:5000';
-        
-        // Chart data
         this.emotionHistory = [];
         this.emotionChart = null;
-        
+        this.recognition = null; // speech recognition instance
+
         console.log('🚀 EmpatheticAI initializing...');
         this.initialize();
         this.initChart();
+        this.initVoiceRecognition();
+        this.loadTheme();
     }
 
     initialize() {
         console.log('🎯 Initializing EmpatheticAI components...');
-        
         try {
             this.webcamHandler = new WebcamHandler();
             this.initializeEventListeners();
             this.checkBackendConnection();
-            
             console.log('✅ EmpatheticAI initialized successfully');
-            
         } catch (error) {
             console.error('❌ Failed to initialize EmpatheticAI:', error);
         }
@@ -67,90 +65,153 @@ class EmpatheticAI {
         }
     }
 
-    initializeEventListeners() {
-        console.log('🔗 Setting up event listeners...');
-        
-        // Send button
-        const sendButton = document.getElementById('send-btn');
-        if (sendButton) {
-            sendButton.addEventListener('click', () => this.handleUserInput());
+    // ─── VOICE INPUT ───────────────────────────────
+    initVoiceRecognition() {
+        // Check browser support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.warn('Speech recognition not supported in this browser');
+            const voiceBtn = document.getElementById('voice-btn');
+            if (voiceBtn) voiceBtn.style.display = 'none';
+            return;
         }
-        
-        // Playlist button
-        const playlistBtn = document.getElementById('playlist-btn');
-        if (playlistBtn) {
-            playlistBtn.addEventListener('click', () => this.handlePlaylistRequest());
-        }
-        
-        // Enter key in input
-        const userInput = document.getElementById('user-input');
-        if (userInput) {
-            userInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleUserInput();
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('user-input').value = transcript;
+            // Optional auto‑send (remove comment if desired):
+            // this.handleUserInput();
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        const voiceBtn = document.getElementById('voice-btn');
+        if (voiceBtn) {
+            voiceBtn.addEventListener('click', () => {
+                if (this.recognition) {
+                    try {
+                        this.recognition.start();
+                    } catch (e) {
+                        console.warn('Recognition already started');
+                    }
                 }
             });
         }
+    }
 
-        // Camera toggle
+    // ─── CSV EXPORT ────────────────────────────────
+    exportHistory() {
+        if (this.emotionHistory.length === 0) {
+            alert('No emotion history to export.');
+            return;
+        }
+        // Create CSV string: each row is an emotion entry
+        let csv = 'Index,Emotion\n';
+        this.emotionHistory.forEach((emotion, idx) => {
+            csv += `${idx + 1},${emotion}\n`;
+        });
+        // Trigger download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'emotion_history.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // ─── DARK MODE TOGGLE ─────────────────────────
+    toggleTheme() {
+        const body = document.body;
+        body.classList.toggle('dark-theme');
+        const isDark = body.classList.contains('dark-theme');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) {
+            btn.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+    }
+
+    loadTheme() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.body.classList.add('dark-theme');
+            const btn = document.getElementById('theme-toggle');
+            if (btn) btn.textContent = '☀️ Light Mode';
+        }
+    }
+
+    // ─── EVENT LISTENERS ─────────────────────────
+    initializeEventListeners() {
+        console.log('🔗 Setting up event listeners...');
+
+        const sendButton = document.getElementById('send-btn');
+        if (sendButton) sendButton.addEventListener('click', () => this.handleUserInput());
+
+        const playlistBtn = document.getElementById('playlist-btn');
+        if (playlistBtn) playlistBtn.addEventListener('click', () => this.handlePlaylistRequest());
+
+        const userInput = document.getElementById('user-input');
+        if (userInput) {
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.handleUserInput();
+            });
+        }
+
         const cameraButton = document.getElementById('toggle-camera');
-        if (cameraButton) {
-            cameraButton.addEventListener('click', () => this.toggleCamera());
-        }
+        if (cameraButton) cameraButton.addEventListener('click', () => this.toggleCamera());
 
-        // Clear chart button
         const clearBtn = document.getElementById('clear-history');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearChart());
-        }
-        
+        if (clearBtn) clearBtn.addEventListener('click', () => this.clearChart());
+
+        const exportBtn = document.getElementById('export-history');
+        if (exportBtn) exportBtn.addEventListener('click', () => this.exportHistory());
+
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) themeBtn.addEventListener('click', () => this.toggleTheme());
+
         console.log('✅ Event listeners set up');
     }
 
+    // ─── REST OF THE METHODS (unchanged from v5) ─
     async handleUserInput() {
         console.log('🔄 ======= START: handleUserInput =======');
-        
-        if (!this.webcamHandler) {
-            console.error('❌ Webcam handler not initialized');
-            return;
-        }
-
+        if (!this.webcamHandler) return;
         const input = document.getElementById('user-input');
         if (!input) return;
-
         const userText = input.value.trim();
         if (!userText) return;
-
         if (this.isProcessing) return;
 
         console.log('💬 Processing user input:', userText);
         this.addMessage(userText, 'user');
         input.value = '';
-        
         this.isProcessing = true;
         this.showLoading(true);
 
         try {
             const facialEmotionData = this.webcamHandler.getCurrentEmotion();
-            console.log('😊 Facial emotion data:', facialEmotionData);
-            
             const response = await this.analyzeEmotions(userText, facialEmotionData);
-            console.log('📨 Backend response received:', response);
-            
             if (response.status === 'success') {
                 this.addMessage(response.response, 'bot');
                 this.updateAnalysisResults(response);
                 this.updateDecisionBreakdown(response);
                 this.showMusicRecommendation(response.song_recommendation);
-                
-                // Update dashboard chart
                 this.updateChart(response.final_emotion);
             } else {
                 throw new Error(response.error || 'Analysis failed');
             }
         } catch (error) {
             console.error('❌ Error in analysis:', error);
-            this.addMessage("I apologize, but I'm having trouble processing your emotions right now. Please try again.", 'bot');
+            this.addMessage("I'm having trouble processing your emotions right now. Please try again.", 'bot');
         } finally {
             this.isProcessing = false;
             this.showLoading(false);
@@ -165,17 +226,13 @@ class EmpatheticAI {
             this.addMessage("Please type a message first so I can understand your mood.", 'bot');
             return;
         }
-
-        // First get the final emotion
         try {
             this.showLoading(true);
             const facialEmotionData = this.webcamHandler.getCurrentEmotion();
             const analysis = await this.analyzeEmotions(userText, facialEmotionData);
             if (analysis.status !== 'success') throw new Error('Analysis failed');
-
             const finalEmotion = analysis.final_emotion;
 
-            // Fetch therapy playlist
             const res = await fetch(`${this.backendURL}/playlist`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -190,6 +247,7 @@ class EmpatheticAI {
             html += '</ol>';
             this.addMessage(html, 'bot', true);
             this.addMessage(analysis.response, 'bot');
+            this.updateChart(finalEmotion);
         } catch (e) {
             console.error(e);
             this.addMessage("Sorry, couldn't generate the playlist right now.", 'bot');
@@ -204,18 +262,15 @@ class EmpatheticAI {
             facial_emotion: facialEmotionData.emotion,
             face_confidence: facialEmotionData.confidence
         };
-
         const response = await fetch(`${this.backendURL}/analyze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
-
         return await response.json();
     }
 
@@ -614,6 +669,6 @@ class EmpatheticAI {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 DOM fully loaded, starting EmpatheticAI v4.0...');
+    console.log('🌐 DOM fully loaded, starting EmpatheticAI v6.0...');
     window.empatheticAI = new EmpatheticAI();
 });
