@@ -1,3 +1,16 @@
 
 python app.py => start backend
 python -m http.server 8000 => start frontend
+
+Models :-
+1. sentiment_classifier
+2. 📜face_expression_model
+3. face landmark 68
+4. face recognition model
+5.📜tiny_face_detector_model
+
+- Relu(For hidden Layers) and softmax(Multi Class Classification on outputs) activation function 
+- Backpropagation and Gradient Descent in training phase of Sentiment Analysis 
+- used Dropout Regularisation in LSTM sentiment model to prevent overfitting
+- Categorical Cross Entropy is used To analyse total loss, in sentiment model training to measure difference between predicted emotional probabilities and actual labels
+- Used Adam Optimizer for faster convergence of Adaptive Learning Rate Optimization.
