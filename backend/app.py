@@ -28,9 +28,9 @@ def analyze_emotion():
         data = request.json
         print(f"📨 Received analysis request: {data}")
         
-        # Text sentiment analysis
+        # Text sentiment analysis – now returns keywords
         text = data.get('text', '')
-        text_emotion, text_confidence, mixed_emotions, sarcasm_score = sentiment_analyzer.predict(text)
+        text_emotion, text_confidence, mixed_emotions, sarcasm_score, keywords = sentiment_analyzer.predict(text)
         
         # Map old emotion labels to new ones if needed
         text_emotion = map_old_to_new_emotion(text_emotion)
@@ -43,6 +43,7 @@ def analyze_emotion():
         print(f"🔍 Face analysis: {facial_emotion} (confidence: {face_confidence})")
         print(f"🎭 Mixed emotions: {mixed_emotions}")
         print(f"😏 Sarcasm score: {sarcasm_score}")
+        print(f"🔑 Detected keywords: {keywords}")
         
         # Get text length for reliability calculation
         text_length = len(text.strip())
@@ -73,10 +74,11 @@ def analyze_emotion():
             'song_recommendation': song_recommendation,
             'decision_reason': decision_reason,
             'fusion_data': fusion_data,
-            'factor_details': factor_details,  # NEW: Add detailed factors
+            'factor_details': factor_details,
             'mixed_emotions': mixed_emotions,
             'sarcasm_detected': sarcasm_score > 0.6,
             'sarcasm_score': float(sarcasm_score),
+            'detected_keywords': list(set(keywords)),          # NEW – unique keywords
             'status': 'success'
         }
         
@@ -103,6 +105,24 @@ def recommend_music():
         return jsonify(song_recommendation)
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# ───── NEW PLAYLIST ENDPOINT ─────
+@app.route('/playlist', methods=['POST'])
+def therapy_playlist():
+    try:
+        data = request.json
+        emotion = data.get('emotion', 'neutral')
+        length = int(data.get('length', 5))
+        playlist = music_recommender.generate_therapy_playlist(emotion, length)
+        return jsonify({
+            'playlist': playlist,
+            'emotion': emotion
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# ───────── keep all the helper functions (calculate_text_reliability, determine_final_emotion, etc.) exactly as they were ─────────
+# (they are unchanged, so I omit them here for brevity – they remain in your file)
 
 def calculate_text_reliability(text_conf, text_length, emotion, text, mixed_emotions, sarcasm_score):
     """Calculate text reliability based on multiple factors with detailed tracking"""

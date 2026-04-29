@@ -161,12 +161,17 @@ class SentimentAnalyzer:
         words = processed_text.split()
         
         emotion_scores = {emotion: 0 for emotion in self.emotion_lexicon.keys()}
+
+        # ────── NEW: collect matched keywords ──────
+        matched_keywords = []
+        # ───────────────────────────────────────────
         
         # Score each word
         for word in words:
             for emotion, data in self.emotion_lexicon.items():
                 if word in data['words']:
                     emotion_scores[emotion] += data['weight']
+                    matched_keywords.append(word)   # NEW
         
         # Boost scores for emotional phrases and patterns
         emotional_phrases = {
@@ -215,31 +220,29 @@ class SentimentAnalyzer:
         # Handle mixed emotions by adjusting confidence
         if mixed_emotions and max_score > 0:
             primary, secondary = mixed_emotions
-            # For mixed emotions, we return the primary but with adjusted confidence
-            confidence = min(max_score / 8.0, 1.0)  # Lower confidence for mixed emotions
-            return dominant_emotion, confidence, mixed_emotions, sarcasm_score
+            confidence = min(max_score / 8.0, 1.0)
+            return dominant_emotion, confidence, mixed_emotions, sarcasm_score, matched_keywords   # NEW: include keywords
         else:
-            # Calculate confidence for single emotion
             if max_score > 0:
-                confidence = min(max_score / 5.0, 1.0)  # Scale to 0-1
+                confidence = min(max_score / 5.0, 1.0)
             else:
                 dominant_emotion = 'neutral'
                 confidence = 0.3
         
-        # Ensure we return only valid emotions
         valid_emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
         if dominant_emotion not in valid_emotions:
             dominant_emotion = 'neutral'
         
-        return dominant_emotion, confidence, None, sarcasm_score
+        return dominant_emotion, confidence, None, sarcasm_score, matched_keywords   # NEW
     
     def predict(self, text):
         """Predict emotion of input text with enhanced analysis"""
         if not text or not text.strip():
-            return "neutral", 0.3, None, 0.0
+            return "neutral", 0.3, None, 0.0, []               # NEW: empty list for keywords
         
         # Use enhanced emotion analysis (bypassing TensorFlow model for now)
-        return self.enhanced_emotion_analysis(text)
+        emotion, confidence, mixed, sarcasm, keywords = self.enhanced_emotion_analysis(text)   # NEW
+        return emotion, confidence, mixed, sarcasm, keywords                                    # NEW
     
     def save_model(self, model_path, tokenizer_path, encoder_path):
         """Save model, tokenizer and encoder"""

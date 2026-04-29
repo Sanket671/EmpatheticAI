@@ -137,6 +137,32 @@ An advanced intelligent system that combines computer vision, natural language p
    - Responsive design
    - Clear emotion visualization
 
+5. **Therapy Playlist (Emotional Progression)**
+   - Description: Generates a 5‑song emotional‑progression playlist that guides the user from the detected emotion toward happiness. The playlist appears as a bot message showing each song's title, artist, and genre.
+   - How to use: Type your message in the chat input and either click `Send` (to see the full analysis) or click the `🧘 Therapy Playlist` button next to the input. The button re‑uses the last final emotion (or triggers a new analysis) to create the playlist.
+   - Fallbacks: If the Spotify dataset doesn't contain enough songs for any progression stage, the system fills the remainder with curated fallback tracks so a full 5‑song playlist is always returned.
+
+6. **Explainability Printout — Keywords**
+   - Description: After every analysis (via `Send`) the "🧠 Analysis Breakdown" card displays a `🔑 Keywords` badge listing the lexicon words that influenced the text sentiment decision (e.g., `lonely, depressed, worried`).
+   - Behavior: If no strong keywords are detected the badge will be empty. This badge makes text‑based decisions transparent and easy to inspect.
+
+7. **Real‑Time Emotion Chart (Emotion History)**
+   - Description: The "📊 Emotion History" dashboard records the final emotion each time the user triggers an analysis (by clicking `Send` or `🧘 Therapy Playlist`) and updates a bar chart of counts per emotion.
+   - Controls: Use the red `Clear History` button to reset all counts to zero.
+   - Note: The chart is only updated when the user triggers an analysis; passive face‑only detections do not increment the chart so it reflects explicit user engagements.
+
+### Try This Full Flow
+- Example: Type "I'm feeling really depressed and lonely, but don't worry about me 😊" and click `Send`.
+  - You will see the fusion breakdown, the `🔑 Keywords` badge (showing `lonely`, `depressed`), and an immediate song recommendation.
+  - The "📊 Emotion History" chart will increment for the detected emotion (e.g., `sad`).
+- Then click `🧘 Therapy Playlist` (without typing a new message). The system re‑uses the last final emotion and returns a 5‑song progression (e.g., `sad → neutral → happy`). The chart may increment again depending on whether your implementation counts playlist generation as a separate analysis event.
+- To reset the chart, click `Clear History`.
+
+### UI Notes
+- The `🧘 Therapy Playlist` button should be placed next to the message input for quick access.
+- Playlist messages should present each track with **Title — Artist (Genre)** and a short explanation of the progression stage.
+- Keep the `🔑 Keywords` badge visible under the analysis bars for immediate explainability.
+
 ## Development
 
 - Backend: Flask REST API with ML models

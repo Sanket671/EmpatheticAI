@@ -202,6 +202,35 @@ class MusicRecommender:
             'status': 'success_fallback'
         }
     
+    def generate_therapy_playlist(self, current_emotion, length=5):
+        """
+        Creates a playlist that transitions from current emotion towards 'happy'.
+        Sad → neutral → happy, Angry → neutral → happy, etc.
+        """
+        progression = {
+            'sad':       ['sad', 'neutral', 'happy'],
+            'angry':     ['angry', 'neutral', 'happy'],
+            'fear':      ['fear', 'neutral', 'happy'],
+            'disgust':   ['disgust', 'neutral', 'happy'],
+            'surprise':  ['surprise', 'happy'],
+            'happy':     ['happy', 'happy', 'happy'],
+            'neutral':   ['neutral', 'happy']
+        }
+        stages = progression.get(current_emotion, ['neutral', 'happy'])
+
+        playlist = []
+        songs_per_stage = max(1, length // len(stages))
+        for stage in stages:
+            for _ in range(songs_per_stage):
+                song = self.recommend_song(stage)
+                playlist.append(song)
+
+        # Fill remaining slots with happy songs
+        while len(playlist) < length:
+            playlist.append(self.recommend_song('happy'))
+
+        return playlist[:length]
+
     def generate_fallback_dataset(self):
         """Generate comprehensive fallback music dataset"""
         # This is your existing fallback dataset

@@ -6,6 +6,8 @@
     <title>EmpatheticAI - Your Emotional Companion</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for real‑time dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -37,6 +39,7 @@
                     <div class="input-container">
                         <input type="text" id="user-input" placeholder="Tell me how you're feeling today..." maxlength="500">
                         <button id="send-btn">Send</button>
+                        <button id="playlist-btn" class="playlist-btn">🧘 Therapy Playlist</button>
                     </div>
                 </div>
             </div>
@@ -123,10 +126,20 @@
                                 <strong>⚠️ Emotional Masking Detected</strong>
                                 <div class="masking-details" id="masking-details"></div>
                             </div>
+
+                            <!-- NEW: display keywords -->
+                            <div id="keyword-badge" style="margin-top:10px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Emotion History Chart -->
+        <div class="dashboard" style="padding:20px; margin: 0 30px 30px 30px; background:#fff; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.08);">
+            <h3 style="margin-bottom:15px;">📊 Emotion History</h3>
+            <canvas id="emotion-chart" width="400" height="200"></canvas>
+            <button id="clear-history" style="margin-top:10px; background:#ef4444; color:#fff; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">Clear History</button>
         </div>
 
         <div id="music-recommendation" class="music-recommendation">
