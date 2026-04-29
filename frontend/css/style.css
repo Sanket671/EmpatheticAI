@@ -814,3 +814,23 @@ body.dark-theme .playlist-btn:hover,
 body.dark-theme .voice-btn:hover {
     background: #636388;
 }
+
+/* ─── Voice button listening state ─── */
+.voice-btn.listening {
+    background: #ef4444 !important;
+    color: white;
+    animation: pulse-mic 1s infinite;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+}
+
+@keyframes pulse-mic {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}

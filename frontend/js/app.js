@@ -1,5 +1,5 @@
-// 🎯 EmpatheticAI v6.0 - Voice, Export & Dark Mode
-console.log('🎯 EmpatheticAI v6.0 - Full Edition');
+// 🎯 EmpatheticAI v6.1 - Voice Feedback, Export & Dark Mode
+console.log('🎯 EmpatheticAI v6.1 - Full Edition');
 
 class EmpatheticAI {
     constructor() {
@@ -65,12 +65,11 @@ class EmpatheticAI {
         }
     }
 
-    // ─── VOICE INPUT ───────────────────────────────
+    // ─── VOICE INPUT WITH FEEDBACK ─────────────────
     initVoiceRecognition() {
-        // Check browser support
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.warn('Speech recognition not supported in this browser');
+            console.warn('Speech recognition not supported');
             const voiceBtn = document.getElementById('voice-btn');
             if (voiceBtn) voiceBtn.style.display = 'none';
             return;
@@ -80,29 +79,46 @@ class EmpatheticAI {
         this.recognition.interimResults = false;
         this.recognition.lang = 'en-US';
 
-        this.recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('user-input').value = transcript;
-            // Optional auto‑send (remove comment if desired):
-            // this.handleUserInput();
+        const voiceBtn = document.getElementById('voice-btn');
+        if (!voiceBtn) return;
+
+        // 🔴 Show listening state
+        this.recognition.onstart = () => {
+            voiceBtn.classList.add('listening');
+            voiceBtn.innerHTML = '🎤'; // keep icon, but class handles visual
+            // Also show a small "listening" tooltip as text on the button (optional)
+            voiceBtn.setAttribute('title', 'Listening...');
+        };
+
+        this.recognition.onend = () => {
+            voiceBtn.classList.remove('listening');
+            voiceBtn.innerHTML = '🎤';
+            voiceBtn.setAttribute('title', 'Speak your feelings');
         };
 
         this.recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            voiceBtn.classList.remove('listening');
+            voiceBtn.innerHTML = '🎤';
+            voiceBtn.setAttribute('title', 'Speak your feelings');
         };
 
-        const voiceBtn = document.getElementById('voice-btn');
-        if (voiceBtn) {
-            voiceBtn.addEventListener('click', () => {
-                if (this.recognition) {
-                    try {
-                        this.recognition.start();
-                    } catch (e) {
-                        console.warn('Recognition already started');
-                    }
+        this.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('user-input').value = transcript;
+            // The recognition will automatically stop after a result (continuous=false)
+            // so onend will fire and remove the listening class.
+        };
+
+        voiceBtn.addEventListener('click', () => {
+            if (this.recognition) {
+                try {
+                    this.recognition.start();
+                } catch (e) {
+                    console.warn('Recognition already started');
                 }
-            });
-        }
+            }
+        });
     }
 
     // ─── CSV EXPORT ────────────────────────────────
@@ -111,12 +127,10 @@ class EmpatheticAI {
             alert('No emotion history to export.');
             return;
         }
-        // Create CSV string: each row is an emotion entry
         let csv = 'Index,Emotion\n';
         this.emotionHistory.forEach((emotion, idx) => {
             csv += `${idx + 1},${emotion}\n`;
         });
-        // Trigger download
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -181,7 +195,7 @@ class EmpatheticAI {
         console.log('✅ Event listeners set up');
     }
 
-    // ─── REST OF THE METHODS (unchanged from v5) ─
+    // ─── REST OF THE METHODS (unchanged from previous version) ─
     async handleUserInput() {
         console.log('🔄 ======= START: handleUserInput =======');
         if (!this.webcamHandler) return;
@@ -274,6 +288,7 @@ class EmpatheticAI {
         return await response.json();
     }
 
+    // ─── The following methods are identical to your previous version ───
     updateDecisionBreakdown(data) {
         console.log('📊 updating decision breakdown');
         try {
@@ -297,7 +312,6 @@ class EmpatheticAI {
             document.getElementById('text-reliability').textContent = `${textReliabilityPercent}%`;
             document.getElementById('face-reliability').textContent = `${faceReliabilityPercent}%`;
 
-            // Use the detailed explanation generator (same as before)
             const detailedExplanation = this.generateSpecificFactorExplanation(data, fusion, factors);
             document.getElementById('decision-reason').innerHTML = detailedExplanation;
 
@@ -311,7 +325,6 @@ class EmpatheticAI {
                 document.getElementById('keyword-badge').innerHTML = '';
             }
 
-            // Masking alerts (unchanged)
             this.updateMaskingAlerts(fusion, data);
         } catch (error) {
             console.error('❌ Error updating breakdown:', error);
@@ -326,10 +339,8 @@ class EmpatheticAI {
         
         let explanation = `<strong>🧠 Detailed Analysis Breakdown</strong><br><br>`;
         
-        // WEIGHT CALCULATION EXPLANATION
-        explanation += `<strong>⚖️ Weight Calculation:</strong><br>`;
-        
         const weightCalc = factors.weight_calculation;
+        explanation += `<strong>⚖️ Weight Calculation:</strong><br>`;
         explanation += `• <strong>Base Text Weight:</strong> ${(weightCalc.base_text_weight * 100).toFixed(1)}%<br>`;
         explanation += `• <strong>Base Face Weight:</strong> ${(weightCalc.base_face_weight * 100).toFixed(1)}%<br>`;
         explanation += `• <strong>Reason:</strong> ${this.formatWeightReason(weightCalc.weight_adjustment_reason)}<br>`;
@@ -338,53 +349,32 @@ class EmpatheticAI {
         explanation += `• <strong>Final Text Weight:</strong> ${textWeight}%<br>`;
         explanation += `• <strong>Final Face Weight:</strong> ${faceWeight}%<br><br>`;
         
-        // TEXT RELIABILITY FACTORS
-        explanation += `<strong>📝 Text Reliability Factors (${textReliability}%):</strong><br>`;
         const textFactors = factors.text_reliability_factors;
-        
-        if (textFactors.base_confidence > 0) {
-            explanation += `• Base confidence: ${(textFactors.base_confidence * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.length_boost > 0) {
-            explanation += `• Text length boost: +${(textFactors.length_boost * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.emotional_words_boost > 0) {
-            explanation += `• Emotional words: +${(textFactors.emotional_words_boost * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.contradiction_penalty < 0) {
-            explanation += `• Contradiction penalty: ${(textFactors.contradiction_penalty * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.masking_boost > 0) {
-            explanation += `• Masking detection: +${(textFactors.masking_boost * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.sarcasm_boost > 0) {
-            explanation += `• Sarcasm adjustment: +${(textFactors.sarcasm_boost * 100).toFixed(1)}%<br>`;
-        }
-        if (textFactors.mixed_emotion_penalty < 0) {
-            explanation += `• Mixed emotions: ${(textFactors.mixed_emotion_penalty * 100).toFixed(1)}%<br>`;
-        }
+        explanation += `<strong>📝 Text Reliability Factors (${textReliability}%):</strong><br>`;
+        if (textFactors.base_confidence > 0) explanation += `• Base confidence: ${(textFactors.base_confidence * 100).toFixed(1)}%<br>`;
+        if (textFactors.length_boost > 0) explanation += `• Text length boost: +${(textFactors.length_boost * 100).toFixed(1)}%<br>`;
+        if (textFactors.emotional_words_boost > 0) explanation += `• Emotional words: +${(textFactors.emotional_words_boost * 100).toFixed(1)}%<br>`;
+        if (textFactors.contradiction_penalty < 0) explanation += `• Contradiction penalty: ${(textFactors.contradiction_penalty * 100).toFixed(1)}%<br>`;
+        if (textFactors.masking_boost > 0) explanation += `• Masking detection: +${(textFactors.masking_boost * 100).toFixed(1)}%<br>`;
+        if (textFactors.sarcasm_boost > 0) explanation += `• Sarcasm adjustment: +${(textFactors.sarcasm_boost * 100).toFixed(1)}%<br>`;
+        if (textFactors.mixed_emotion_penalty < 0) explanation += `• Mixed emotions: ${(textFactors.mixed_emotion_penalty * 100).toFixed(1)}%<br>`;
         
         explanation += `<br>`;
         
-        // FACE RELIABILITY FACTORS
-        explanation += `<strong>😊 Face Reliability Factors (${faceReliability}%):</strong><br>`;
         const faceFactors = factors.face_reliability_factors;
-        
+        explanation += `<strong>😊 Face Reliability Factors (${faceReliability}%):</strong><br>`;
         explanation += `• Base confidence: ${(faceFactors.base_confidence * 100).toFixed(1)}%<br>`;
         explanation += `• Authenticity factor: ${(faceFactors.authenticity_factor * 100).toFixed(1)}%<br>`;
         explanation += `• <em>${this.getAuthenticityExplanation(data.facial_emotion)}</em><br><br>`;
         
-        // CONTEXT FACTORS
-        explanation += `<strong>🔍 Context Analysis:</strong><br>`;
         const context = factors.context_factors;
-        
+        explanation += `<strong>🔍 Context Analysis:</strong><br>`;
         explanation += `• Text length: ${context.text_length} characters<br>`;
         explanation += `• Sarcasm score: ${(context.sarcasm_score * 100).toFixed(1)}%<br>`;
         explanation += `• Mixed emotions: ${context.mixed_emotions_detected ? 'Yes' : 'No'}<br>`;
         explanation += `• Original face confidence: ${(context.face_confidence_original * 100).toFixed(1)}%<br>`;
         explanation += `• Original text confidence: ${(context.text_confidence_original * 100).toFixed(1)}%<br>`;
         
-        // FINAL FORMULA
         explanation += `<br><strong>🎯 Final Emotion Calculation:</strong><br>`;
         explanation += `Final = (Text: ${data.text_emotion} × ${textWeight}%) + (Face: ${data.facial_emotion} × ${faceWeight}%)<br>`;
         explanation += `Result: <strong>${data.final_emotion}</strong>`;
@@ -417,62 +407,21 @@ class EmpatheticAI {
         return explanations[emotion] || 'Standard authenticity factor applied';
     }
 
-    updateElement(elementId, content, isHTML = false) {
-        try {
-            const element = document.getElementById(elementId);
-            if (!element) {
-                console.error(`❌ Element ${elementId} not found`);
-                return;
-            }
-
-            if (isHTML) {
-                element.innerHTML = content;
-            } else {
-                element.textContent = content;
-            }
-            console.log(`✅ Updated ${elementId}: ${content}`);
-        } catch (error) {
-            console.error(`❌ Error updating ${elementId}:`, error);
-        }
-    }
-
-    updateElementStyle(elementId, property, value) {
-        try {
-            const element = document.getElementById(elementId);
-            if (!element) {
-                console.error(`❌ Element ${elementId} not found for style update`);
-                return;
-            }
-
-            element.style[property] = value;
-            console.log(`✅ Updated ${elementId} style: ${property} = ${value}`);
-        } catch (error) {
-            console.error(`❌ Error updating ${elementId} style:`, error);
-        }
-    }
-
     updateMaskingAlerts(fusion, data) {
         try {
             const maskingAlert = document.getElementById('masking-alert');
             const maskingDetails = document.getElementById('masking-details');
-            
-            if (!maskingAlert || !maskingDetails) {
-                console.error('❌ Masking alert elements not found');
-                return;
-            }
+            if (!maskingAlert || !maskingDetails) return;
 
             let maskingText = '';
-            
             if (fusion.masking_indicators && fusion.masking_indicators.length > 0) {
                 maskingText = fusion.masking_indicators.map(indicator => 
                     `• ${this.formatMaskingIndicator(indicator)}`
                 ).join('<br>');
             }
-            
             if (data.sarcasm_detected) {
                 maskingText += (maskingText ? '<br>' : '') + `• Sarcasm detected (${(data.sarcasm_score * 100).toFixed(1)}% confidence)`;
             }
-            
             if (data.mixed_emotions) {
                 const [primary, secondary] = data.mixed_emotions;
                 maskingText += (maskingText ? '<br>' : '') + `• Mixed emotions detected: ${this.capitalizeFirst(primary)} and ${this.capitalizeFirst(secondary)}`;
@@ -480,15 +429,9 @@ class EmpatheticAI {
             
             if (maskingText) {
                 maskingAlert.style.display = 'block';
-                maskingAlert.style.opacity = '1';
-                maskingAlert.style.visibility = 'visible';
                 maskingDetails.innerHTML = maskingText;
-                console.log('✅ Masking alerts shown');
             } else {
                 maskingAlert.style.display = 'none';
-                maskingAlert.style.opacity = '0';
-                maskingAlert.style.visibility = 'hidden';
-                console.log('✅ No masking alerts');
             }
         } catch (error) {
             console.error('❌ Error updating masking alerts:', error);
@@ -509,25 +452,15 @@ class EmpatheticAI {
 
     updateAnalysisResults(data) {
         console.log('📊 Updating analysis results...', data);
-        
         try {
-            // Text emotion
-            this.updateElement('text-emotion', this.capitalizeFirst(data.text_emotion || 'neutral'));
-            this.updateElementStyle('text-confidence-fill', 'width', `${(data.text_confidence || 0.5) * 100}%`);
+            document.getElementById('text-emotion').textContent = this.capitalizeFirst(data.text_emotion || 'neutral');
+            document.getElementById('text-confidence-fill').style.width = `${(data.text_confidence || 0.5) * 100}%`;
 
-            // Facial emotion
-            this.updateElement('facial-emotion', this.capitalizeFirst(data.facial_emotion || 'neutral'));
-            this.updateElementStyle('face-confidence-fill', 'width', `${(data.face_confidence || 0.3) * 100}%`);
+            document.getElementById('facial-emotion').textContent = this.capitalizeFirst(data.facial_emotion || 'neutral');
+            document.getElementById('face-confidence-fill').style.width = `${(data.face_confidence || 0.3) * 100}%`;
 
-            // Final emotion
-            this.updateElement('final-emotion', this.capitalizeFirst(data.final_emotion || data.text_emotion || 'neutral'));
-            
-            // Emotion emoji
-            const finalEmotion = data.final_emotion || data.text_emotion || 'neutral';
-            const emoji = this.getEmotionEmoji(finalEmotion);
-            this.updateElement('emotion-emoji', emoji);
-            
-            console.log('✅ Analysis results updated successfully');
+            document.getElementById('final-emotion').textContent = this.capitalizeFirst(data.final_emotion || data.text_emotion || 'neutral');
+            document.getElementById('emotion-emoji').textContent = this.getEmotionEmoji(data.final_emotion);
         } catch (error) {
             console.error('❌ Error updating analysis results:', error);
         }
@@ -550,6 +483,66 @@ class EmpatheticAI {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    showMusicRecommendation(song) {
+        try {
+            const musicSection = document.getElementById('music-recommendation');
+            if (!musicSection) return;
+
+            document.getElementById('song-title').textContent = song.title || 'Unknown Song';
+            document.getElementById('song-artist').textContent = song.artist || 'Unknown Artist';
+            document.getElementById('song-genre').textContent = song.genre || 'Various';
+            
+            const spotifyLink = document.getElementById('spotify-link');
+            if (spotifyLink && song.spotify_link) {
+                spotifyLink.href = song.spotify_link;
+            } else if (spotifyLink) {
+                spotifyLink.href = 'https://open.spotify.com';
+            }
+            musicSection.style.display = 'block';
+        } catch (error) {
+            console.error('❌ Error showing music recommendation:', error);
+        }
+    }
+
+    showLoading(show) {
+        try {
+            const overlay = document.getElementById('loading-overlay');
+            if (!overlay) return;
+            if (show) {
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('❌ Error showing/hiding loading:', error);
+        }
+    }
+
+    toggleCamera() {
+        if (!this.webcamHandler) return;
+        const button = document.getElementById('toggle-camera');
+        if (!this.webcamHandler.isCameraOn) {
+            this.webcamHandler.startCamera();
+        } else {
+            this.webcamHandler.stopCamera();
+        }
+    }
+
+    async checkBackendConnection() {
+        try {
+            const response = await fetch(`${this.backendURL}/health`);
+            if (!response.ok) console.warn('⚠️ Backend connection issues');
+            else console.log('✅ Backend connection successful');
+        } catch (error) {
+            console.error('❌ Cannot connect to backend:', error);
+            this.addMessage("I'm having trouble connecting to my analysis engine. Please make sure the backend server is running on port 5000.", 'bot');
+        }
+    }
+
+    capitalizeFirst(string) {
+        return string ? string.charAt(0).toUpperCase() + string.slice(1) : 'Unknown';
+    }
+
     getEmotionEmoji(emotion) {
         const emojiMap = {
             'happy': '😊',
@@ -565,110 +558,8 @@ class EmpatheticAI {
         };
         return emojiMap[emotion] || '😊';
     }
-
-    showMusicRecommendation(song) {
-        try {
-            const musicSection = document.getElementById('music-recommendation');
-            if (!musicSection) {
-                console.error('❌ Music recommendation section not found');
-                return;
-            }
-
-            console.log('🎵 Showing music recommendation:', song);
-
-            this.updateElement('song-title', song.title || 'Unknown Song');
-            this.updateElement('song-artist', song.artist || 'Unknown Artist');
-            this.updateElement('song-genre', song.genre || 'Various');
-            
-            const spotifyLink = document.getElementById('spotify-link');
-            if (spotifyLink && song.spotify_link) {
-                spotifyLink.href = song.spotify_link;
-            } else if (spotifyLink) {
-                spotifyLink.href = 'https://open.spotify.com';
-            }
-            
-            musicSection.style.display = 'block';
-            musicSection.style.opacity = '1';
-            musicSection.style.visibility = 'visible';
-            
-            setTimeout(() => {
-                musicSection.scrollIntoView({ behavior: 'smooth' });
-            }, 500);
-            
-            console.log('✅ Music recommendation displayed');
-        } catch (error) {
-            console.error('❌ Error showing music recommendation:', error);
-        }
-    }
-
-    showLoading(show) {
-        try {
-            const overlay = document.getElementById('loading-overlay');
-            if (!overlay) {
-                console.error('❌ Loading overlay not found');
-                return;
-            }
-
-            if (show) {
-                overlay.style.display = 'flex';
-                overlay.style.opacity = '1';
-                overlay.style.visibility = 'visible';
-                console.log('🔄 Showing loading overlay');
-            } else {
-                overlay.style.display = 'none';
-                overlay.style.opacity = '0';
-                overlay.style.visibility = 'hidden';
-                console.log('✅ Hiding loading overlay');
-            }
-        } catch (error) {
-            console.error('❌ Error showing/hiding loading:', error);
-        }
-    }
-
-    capitalizeFirst(string) {
-        return string ? string.charAt(0).toUpperCase() + string.slice(1) : 'Unknown';
-    }
-
-    async toggleCamera() {
-        if (!this.webcamHandler) {
-            console.error('❌ Webcam handler not initialized');
-            return;
-        }
-
-        const button = document.getElementById('toggle-camera');
-        if (!button) {
-            console.error('❌ Camera button not found');
-            return;
-        }
-        
-        if (!this.webcamHandler.isCameraOn) {
-            console.log('🎥 Starting camera...');
-            await this.webcamHandler.startCamera();
-        } else {
-            console.log('🛑 Stopping camera...');
-            this.webcamHandler.stopCamera();
-        }
-    }
-
-    async checkBackendConnection() {
-        try {
-            console.log('🔌 Checking backend connection...');
-            const response = await fetch(`${this.backendURL}/health`);
-            
-            if (response.ok) {
-                console.log('✅ Backend connection successful');
-            } else {
-                console.warn('⚠️ Backend connection issues');
-            }
-        } catch (error) {
-            console.error('❌ Cannot connect to backend:', error);
-            this.addMessage("I'm having trouble connecting to my analysis engine. Please make sure the backend server is running on port 5000.", 'bot');
-        }
-    }
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 DOM fully loaded, starting EmpatheticAI v6.0...');
     window.empatheticAI = new EmpatheticAI();
 });

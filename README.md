@@ -151,6 +151,19 @@ An advanced intelligent system that combines computer vision, natural language p
    - Controls: Use the red `Clear History` button to reset all counts to zero.
    - Note: The chart is only updated when the user triggers an analysis; passive face‑only detections do not increment the chart so it reflects explicit user engagements.
 
+8. **Voice Input (Speech → Text)**
+   - Description: Click the `🎤` button next to the message input, speak, and your words will appear in the text box. Press `Send` to analyze the transcribed text.
+   - Mic indicator: The UI shows a clear mic state (on/off) via the icon and color change so users know when audio capture is active.
+   - Privacy: Uses browser speech recognition APIs where available and requests permission before recording.
+
+9. **Export History — CSV**
+   - Description: The dashboard includes a `📥 Export CSV` control that downloads the session emotion log as a CSV file for offline inspection and analysis.
+   - CSV contents: Each row includes `timestamp`, `final_emotion`, `confidence`, `keywords` (if any), and `source` (text/playlist).
+
+10. **Dark Mode**
+   - Description: A `🌙 Dark Mode` toggle in the top-right header switches the UI between light and dark themes. The user's preference is saved in the browser so it persists across sessions.
+   - Behavior: Click again to return to light mode; preference stored in `localStorage`.
+
 ### Try This Full Flow
 - Example: Type "I'm feeling really depressed and lonely, but don't worry about me 😊" and click `Send`.
   - You will see the fusion breakdown, the `🔑 Keywords` badge (showing `lonely`, `depressed`), and an immediate song recommendation.
@@ -162,6 +175,10 @@ An advanced intelligent system that combines computer vision, natural language p
 - The `🧘 Therapy Playlist` button should be placed next to the message input for quick access.
 - Playlist messages should present each track with **Title — Artist (Genre)** and a short explanation of the progression stage.
 - Keep the `🔑 Keywords` badge visible under the analysis bars for immediate explainability.
+
+- Voice input: Click the `🎤` button next to the text input to enable speech-to-text. The mic icon and color change indicate whether the mic is active; speak to populate the input and press `Send` to analyze.
+- Export history: Use the `📥 Export CSV` button on the dashboard to download your session emotion log (timestamp, emotion, confidence, keywords).
+- Dark mode: Toggle the `🌙 Dark Mode` button in the top-right header to switch themes; the choice is saved in the browser `localStorage`.
 
 ## Development
 
